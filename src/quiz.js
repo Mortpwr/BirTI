@@ -7,7 +7,7 @@ export function createQuiz(questions, config, onComplete) {
   // 移除随机打乱，保持题目顺序（从早到晚的时间线）
   const mainQuestions = [...questions.main]
   const foodCourtQ = questions.special.find((q) => q.id === 'food_court_q')
-  const lotusGateQ = questions.special.find((q) => q.id === 'lotus_gate_q24')
+  const lotusGateQ = questions.special.find((q) => q.id === 'lotus_gate_q22')
 
   let queue = [...mainQuestions]
   let current = 0
@@ -55,22 +55,22 @@ export function createQuiz(questions, config, onComplete) {
       answers[question.id] = option.value
     }
 
-    // 美食城分支：如果在 q20 选择了“推开门走了进去”（value: 2），则在下一题插入美食城内部的题目
-    if (question.id === 'q20' && option.value === 2) {
+    // 美食城分支：如果在 q18 选择了“推开门走了进去”（value: 2），则在下一题插入美食城内部的题目
+    if (question.id === 'q18' && option.value === 2) {
       if (foodCourtQ && !queue.find(q => q.id === 'food_court_q')) {
-        queue = insertAfter(queue, 'q20', foodCourtQ)
+        queue = insertAfter(queue, 'q18', foodCourtQ)
       }
     }
 
-    // 莲花门：如果在 q22 选择了特定的选项（凝视莲花），则在队列末尾插入隐藏题 q24
+    // 莲花门：如果在 q19 选择了特定的选项（凝视莲花），则在队列末尾插入隐藏题 q22
     if (question.id === config.lotusGate.questionId && option.value === config.lotusGate.triggerValue) {
-      if (lotusGateQ && !queue.find(q => q.id === 'lotus_gate_q24')) {
+      if (lotusGateQ && !queue.find(q => q.id === 'lotus_gate_q22')) {
         queue.push(lotusGateQ)
       }
     }
 
-    // 隐藏结局判定：如果当前是隐藏题 q24，记录玩家的选择
-    if (question.id === 'lotus_gate_q24') {
+    // 隐藏结局判定：如果当前是隐藏题 q22，记录玩家的选择
+    if (question.id === 'lotus_gate_q22') {
       hiddenEnd = option.value // 'FAKE_END' 或 'TRUE_END'
     }
 
