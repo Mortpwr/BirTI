@@ -38,7 +38,9 @@ export function createQuiz(questions, config, onComplete) {
     els.qText.textContent = q.text
 
     els.options.innerHTML = ''
-    q.options.forEach((opt) => {
+    // 打乱当前题目的选项顺序
+    const shuffledOptions = shuffle(q.options)
+    shuffledOptions.forEach((opt) => {
       const btn = document.createElement('button')
       btn.className = 'btn btn-option'
       btn.textContent = opt.label
