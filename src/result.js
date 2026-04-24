@@ -12,17 +12,25 @@ export function renderResult(result, userLevels, dimOrder, dimDefs, config) {
 
   // Kicker
   const kicker = document.getElementById('result-kicker')
-  if (mode === 'drunk') kicker.textContent = '隐藏人格已激活'
-  else if (mode === 'fallback') kicker.textContent = '系统强制兜底'
-  else kicker.textContent = '你的主类型'
+  if (mode === 'special') kicker.textContent = '隐藏结局已触发'
+  else kicker.textContent = '你的最终结局'
 
   // 主类型
   document.getElementById('result-code').textContent = primary.code
   document.getElementById('result-name').textContent = primary.cn
 
-  // 匹配度
+  // 匹配度 (将15维改为6维)
   document.getElementById('result-badge').textContent =
-    `匹配度 ${primary.similarity}%` + (primary.exact != null ? ` · 精准命中 ${primary.exact}/15 维` : '')
+    `匹配度 ${primary.similarity}%` + (primary.exact != null ? ` · 精准命中 ${primary.exact}/6 维` : '')
+
+  // 结局图片占位符处理
+  const imgEl = document.getElementById('result-image')
+  if (primary.image) {
+    imgEl.src = primary.image
+    imgEl.style.display = 'block'
+  } else {
+    imgEl.style.display = 'none'
+  }
 
   // Intro & 描述
   document.getElementById('result-intro').textContent = primary.intro || ''
@@ -30,7 +38,7 @@ export function renderResult(result, userLevels, dimOrder, dimDefs, config) {
 
   // 次要匹配
   const secEl = document.getElementById('result-secondary')
-  if (secondary && (mode === 'drunk' || mode === 'fallback')) {
+  if (secondary && mode === 'special') {
     secEl.style.display = ''
     document.getElementById('secondary-info').textContent =
       `${secondary.code}（${secondary.cn}）· 匹配度 ${secondary.similarity}%`
@@ -86,15 +94,5 @@ export function renderResult(result, userLevels, dimOrder, dimDefs, config) {
   const btnDownload = document.getElementById('btn-download')
   btnDownload.onclick = () => {
     generateShareImage(primary, userLevels, dimOrder, dimDefs, mode)
-  }
-
-  // 复制 AI Agent 命令
-  const btnAgent = document.getElementById('btn-agent')
-  btnAgent.onclick = () => {
-    const cmd = `git clone https://github.com/pingfanfan/SBTI.git && cd SBTI && npm install && npm run dev`
-    navigator.clipboard.writeText(cmd).then(() => {
-      btnAgent.textContent = '已复制!'
-      setTimeout(() => { btnAgent.textContent = '复制一键部署命令' }, 2000)
-    })
   }
 }

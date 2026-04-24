@@ -1,15 +1,15 @@
 /* ========== CSS Variables ========== */
 :root {
-  --bg: #f0f4f1;
-  --card-bg: #ffffff;
-  --text: #2c3e2d;
-  --text-secondary: #6b7b6e;
-  --accent: #4c6752;
-  --accent-light: #e8f0ea;
-  --accent-hover: #3d5443;
-  --border: #d8e0da;
+  --bg: #121212;
+  --card-bg: #1e1e1e;
+  --text: #e0e0e0;
+  --text-secondary: #888888;
+  --accent: #8b6b7b;
+  --accent-light: #2a2428;
+  --accent-hover: #a38292;
+  --border: #333333;
   --radius: 12px;
-  --shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   --font: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
     'Microsoft YaHei', sans-serif;
   --max-width: 640px;
@@ -247,6 +247,7 @@ body {
   text-align: left;
   line-height: 1.8;
   margin-bottom: 28px;
+  white-space: pre-wrap;
 }
 
 .result-secondary {
@@ -320,18 +321,18 @@ body {
 }
 
 .level-low {
-  background: #fef3e2;
-  color: #b8860b;
+  background: #3a2a18;
+  color: #d4a373;
 }
 
 .level-mid {
-  background: #e8f0ea;
-  color: #4c6752;
+  background: #2a2428;
+  color: #8b6b7b;
 }
 
 .level-high {
-  background: #e2f0e8;
-  color: #2d7a4a;
+  background: #1e3a2f;
+  color: #6b9b7e;
 }
 
 .dim-desc {

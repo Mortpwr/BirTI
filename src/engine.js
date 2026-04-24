@@ -3,7 +3,7 @@
  */
 
 /**
- * 按维度求和：每维度 2 题，分值相加 (范围 2-6)
+ * 按维度求和：每维度 3 题，分值相加 (范围 3-9)
  * @param {Object} answers  { q1: 2, q3: 1, ... }
  * @param {Array}  questions 题目定义数组
  * @returns {Object} { S1: 5, S2: 3, ... }
@@ -12,22 +12,31 @@ export function calcDimensionScores(answers, questions) {
   const scores = {}
   for (const q of questions) {
     if (answers[q.id] == null) continue
-    scores[q.dim] = (scores[q.dim] || 0) + answers[q.id]
+    if (!scores[q.dim]) scores[q.dim] = { sum: 0, count: 0 };
+    scores[q.dim].sum += answers[q.id];
+    scores[q.dim].count += 1;
   }
-  return scores
+  const finalScores = {};
+  for (const dim in scores) {
+    if (dim === 'NONE' || dim === 'SPECIAL') continue;
+    // Calculate pure average (1-3)
+    finalScores[dim] = scores[dim].sum / scores[dim].count;
+  }
+  return finalScores;
 }
 
 /**
  * 原始分 → L/M/H 等级
  * @param {Object} scores      { S1: 5, ... }
- * @param {Object} thresholds  { L: [2,3], M: [4,4], H: [5,6] }
+ * @param {Object} thresholds  { L: [3,4], M: [5,7], H: [8,9] }
  * @returns {Object} { S1: 'H', S2: 'L', ... }
  */
 export function scoresToLevels(scores, thresholds) {
   const levels = {}
   for (const [dim, score] of Object.entries(scores)) {
-    if (score <= thresholds.L[1]) levels[dim] = 'L'
-    else if (score >= thresholds.H[0]) levels[dim] = 'H'
+    // Pure average is between 1.0 and 3.0
+    if (score < 1.67) levels[dim] = 'L'
+    else if (score > 2.33) levels[dim] = 'H'
     else levels[dim] = 'M'
   }
   return levels
@@ -40,7 +49,7 @@ const LEVEL_NUM = { L: 1, M: 2, H: 3 }
 
 /**
  * 解析人格类型的 pattern 字符串
- * "HHH-HMH-MHH-HHH-MHM" → ['H','H','H','H','M','H','M','H','H','H','H','H','M','H','M']
+ * "H-H-H-H" → ['H','H','H','H']
  */
 export function parsePattern(pattern) {
   return pattern.replace(/-/g, '').split('')
@@ -49,8 +58,8 @@ export function parsePattern(pattern) {
 /**
  * 计算用户向量与类型 pattern 的曼哈顿距离
  * @param {Object} userLevels  { S1: 'H', S2: 'L', ... }
- * @param {Array}  dimOrder    ['S1','S2','S3','E1',...]
- * @param {string} pattern     "HHH-HMH-MHH-HHH-MHM"
+ * @param {Array}  dimOrder    ['E','V','R','A']
+ * @param {string} pattern     "H-H-H-H"
  * @returns {{ distance: number, exact: number, similarity: number }}
  */
 export function matchType(userLevels, dimOrder, pattern) {
@@ -66,7 +75,8 @@ export function matchType(userLevels, dimOrder, pattern) {
     if (diff === 0) exact++
   }
 
-  const similarity = Math.max(0, Math.round((1 - distance / 30) * 100))
+  const maxDist = dimOrder.length * 2;
+  const similarity = Math.max(0, Math.round((1 - distance / maxDist) * 100))
   return { distance, exact, similarity }
 }
 
@@ -76,7 +86,7 @@ export function matchType(userLevels, dimOrder, pattern) {
  * @param {Array}   dimOrder     维度顺序
  * @param {Array}   standardTypes 标准类型数组
  * @param {Array}   specialTypes  特殊类型数组
- * @param {Object}  options      { isDrunk: boolean }
+ * @param {Object}  options      { hiddenEnd: 'FAKE_END' | 'TRUE_END' | null }
  * @returns {{ primary: Object, secondary: Object|null, rankings: Array, mode: string }}
  */
 export function determineResult(userLevels, dimOrder, standardTypes, specialTypes, options = {}) {
@@ -89,29 +99,21 @@ export function determineResult(userLevels, dimOrder, standardTypes, specialType
   rankings.sort((a, b) => a.distance - b.distance || b.exact - a.exact || b.similarity - a.similarity)
 
   const best = rankings[0]
-  const drunk = specialTypes.find((t) => t.code === 'DRUNK')
-  const hhhh = specialTypes.find((t) => t.code === 'HHHH')
 
-  // 酒鬼覆盖
-  if (options.isDrunk && drunk) {
-    return {
-      primary: { ...drunk, similarity: best.similarity, exact: best.exact },
-      secondary: best,
-      rankings,
-      mode: 'drunk',
+  // 如果触发了隐藏结局（FAKE_END 或 TRUE_END），直接覆盖常规结算
+  if (options.hiddenEnd) {
+    const hiddenType = specialTypes.find((t) => t.code === options.hiddenEnd)
+    if (hiddenType) {
+      return {
+        primary: { ...hiddenType, similarity: 100, exact: dimOrder.length },
+        secondary: best,
+        rankings,
+        mode: 'special',
+      }
     }
   }
 
-  // 傻乐者兜底
-  if (best.similarity < 60 && hhhh) {
-    return {
-      primary: { ...hhhh, similarity: best.similarity, exact: best.exact },
-      secondary: best,
-      rankings,
-      mode: 'fallback',
-    }
-  }
-
+  // 常规结算
   return {
     primary: best,
     secondary: rankings[1] || null,

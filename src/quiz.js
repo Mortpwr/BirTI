@@ -1,17 +1,20 @@
-import { shuffle, insertAtRandom, insertAfter } from './utils.js'
+import { shuffle, insertAfter } from './utils.js'
 
 /**
  * 答题控制器
  */
 export function createQuiz(questions, config, onComplete) {
-  const mainQuestions = shuffle(questions.main)
-  const drinkGateQ1 = questions.special.find((q) => q.id === config.drinkGate.questionId)
-  const drinkGateQ2 = questions.special.find((q) => q.id === 'drink_gate_q2')
+  // 移除随机打乱，保持题目顺序（从早到晚的时间线）
+  const mainQuestions = [...questions.main]
+  const foodCourtQ = questions.special.find((q) => q.id === 'food_court_q')
+  const lotusGateQ = questions.special.find((q) => q.id === 'lotus_gate_q24')
 
-  let queue = insertAtRandom(mainQuestions, drinkGateQ1)
+  let queue = [...mainQuestions]
   let current = 0
   let answers = {}
-  let isDrunk = false
+  
+  // 记录是否触发了隐藏结局，以及触发了哪一个（'FAKE_END' 或 'TRUE_END'）
+  let hiddenEnd = null
 
   const els = {
     fill: document.getElementById('progress-fill'),
@@ -47,21 +50,33 @@ export function createQuiz(questions, config, onComplete) {
   }
 
   function selectOption(question, option) {
-    answers[question.id] = option.value
-
-    // 酒鬼门：如果选了"饮酒"，插入追问
-    if (question.id === config.drinkGate.questionId && option.value === config.drinkGate.triggerValue) {
-      queue = insertAfter(queue, question.id, drinkGateQ2)
+    // 记录答案（如果是隐藏题，它的 value 是字符串，不需要记入常规得分）
+    if (typeof option.value === 'number') {
+      answers[question.id] = option.value
     }
 
-    // 酒鬼检测
-    if (question.id === 'drink_gate_q2' && option.value === config.drinkGate.drunkTriggerValue) {
-      isDrunk = true
+    // 美食城分支：如果在 q20 选择了“推开门走了进去”（value: 2），则在下一题插入美食城内部的题目
+    if (question.id === 'q20' && option.value === 2) {
+      if (foodCourtQ && !queue.find(q => q.id === 'food_court_q')) {
+        queue = insertAfter(queue, 'q20', foodCourtQ)
+      }
+    }
+
+    // 莲花门：如果在 q22 选择了特定的选项（凝视莲花），则在队列末尾插入隐藏题 q24
+    if (question.id === config.lotusGate.questionId && option.value === config.lotusGate.triggerValue) {
+      if (lotusGateQ && !queue.find(q => q.id === 'lotus_gate_q24')) {
+        queue.push(lotusGateQ)
+      }
+    }
+
+    // 隐藏结局判定：如果当前是隐藏题 q24，记录玩家的选择
+    if (question.id === 'lotus_gate_q24') {
+      hiddenEnd = option.value // 'FAKE_END' 或 'TRUE_END'
     }
 
     current++
     if (current >= totalCount()) {
-      onComplete(answers, isDrunk)
+      onComplete(answers, hiddenEnd)
     } else {
       renderQuestion()
     }
@@ -70,8 +85,8 @@ export function createQuiz(questions, config, onComplete) {
   function start() {
     current = 0
     answers = {}
-    isDrunk = false
-    queue = insertAtRandom(shuffle(questions.main), drinkGateQ1)
+    hiddenEnd = null
+    queue = [...questions.main]
     renderQuestion()
   }
 
